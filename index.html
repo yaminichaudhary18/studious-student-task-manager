@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Studious | Responsive Student Task & Study Manager</title>
+  <meta name="description" content="A powerful, modern student task management web application with priority levels, categories, search, filtering, and subtasks.">
+  
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎓</text></svg>">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar / Navigation -->
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="logo-icon">
+          <i class="fa-solid fa-graduation-cap"></i>
+        </div>
+        <div class="brand-text">
+          <h1>Studious</h1>
+          <span>Task & Study Hub</span>
+        </div>
+        <button class="mobile-close-btn" id="closeSidebarBtn" aria-label="Close menu">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Quick Stats Widget -->
+      <div class="stats-card">
+        <h3><i class="fa-solid fa-chart-pie"></i> Study Progress</h3>
+        <div class="progress-ring-container">
+          <div class="progress-info">
+            <span class="progress-percentage" id="progressPercentage">0%</span>
+            <span class="progress-label">Completed</span>
+          </div>
+          <svg class="progress-ring" width="100" height="100">
+            <circle class="progress-ring-circle-bg" stroke="rgba(255,255,255,0.1)" stroke-width="8" fill="transparent" r="40" cx="50" cy="50"/>
+            <circle class="progress-ring-circle" id="progressRing" stroke="url(#gradient)" stroke-width="8" stroke-dasharray="251.2" stroke-dashoffset="251.2" stroke-linecap="round" fill="transparent" r="40" cx="50" cy="50"/>
+            <defs>
+              <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#6366f1" />
+                <stop offset="100%" stop-color="#10b981" />
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-box">
+            <span class="stat-number" id="statTotal">0</span>
+            <span class="stat-name">Total</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-number stat-pending" id="statPending">0</span>
+            <span class="stat-name">Pending</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-number stat-done" id="statCompleted">0</span>
+            <span class="stat-name">Done</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-number stat-overdue" id="statOverdue">0</span>
+            <span class="stat-name">Overdue</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation Views -->
+      <nav class="nav-menu">
+        <div class="nav-section-title">Views</div>
+        <button class="nav-btn active" data-filter-view="all">
+          <i class="fa-solid fa-list-check"></i>
+          <span>All Tasks</span>
+          <span class="badge" id="badgeAll">0</span>
+        </button>
+        <button class="nav-btn" data-filter-view="today">
+          <i class="fa-solid fa-calendar-day"></i>
+          <span>Due Today</span>
+          <span class="badge badge-warning" id="badgeToday">0</span>
+        </button>
+        <button class="nav-btn" data-filter-view="upcoming">
+          <i class="fa-solid fa-calendar-week"></i>
+          <span>Upcoming</span>
+          <span class="badge" id="badgeUpcoming">0</span>
+        </button>
+        <button class="nav-btn" data-filter-view="overdue">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <span>Overdue</span>
+          <span class="badge badge-danger" id="badgeOverdue">0</span>
+        </button>
+        <button class="nav-btn" data-filter-view="completed">
+          <i class="fa-solid fa-circle-check"></i>
+          <span>Completed</span>
+          <span class="badge badge-success" id="badgeCompleted">0</span>
+        </button>
+      </nav>
+
+      <!-- Preferences & Actions -->
+      <div class="sidebar-footer">
+        <button class="btn btn-secondary btn-full" id="resetDemoBtn">
+          <i class="fa-solid fa-rotate-left"></i> Reset Demo Data
+        </button>
+      </div>
+    </aside>
+
+    <!-- Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Top Header -->
+      <header class="app-header">
+        <div class="header-left">
+          <button class="mobile-menu-btn" id="openSidebarBtn" aria-label="Open menu">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <div class="page-title">
+            <h2 id="viewTitle">All Tasks</h2>
+            <p id="viewSubtitle" class="text-muted">Manage your coursework, assignments, and study schedules</p>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <button class="theme-toggle-btn" id="themeToggleBtn" aria-label="Toggle theme">
+            <i class="fa-solid fa-sun icon-light"></i>
+            <i class="fa-solid fa-moon icon-dark"></i>
+          </button>
+          <button class="btn btn-primary" id="openAddTaskModalBtn">
+            <i class="fa-solid fa-plus"></i>
+            <span class="btn-text">New Task</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Controls Bar: Search, Filters & Sorting -->
+      <section class="controls-card">
+        <!-- Search Field -->
+        <div class="search-box">
+          <i class="fa-solid fa-magnifying-glass search-icon"></i>
+          <input type="text" id="searchInput" placeholder="Search tasks by title, subject, or notes..." autocomplete="off">
+          <button class="clear-search-btn" id="clearSearchBtn" aria-label="Clear search">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <!-- Filter & Sort Selectors -->
+        <div class="filters-row">
+          <div class="filter-group">
+            <label for="priorityFilter"><i class="fa-solid fa-flag"></i> Priority</label>
+            <select id="priorityFilter" class="custom-select">
+              <option value="all">All Priorities</option>
+              <option value="urgent">🔴 Urgent</option>
+              <option value="high">🟠 High</option>
+              <option value="medium">🟡 Medium</option>
+              <option value="low">🟢 Low</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label for="subjectFilter"><i class="fa-solid fa-book"></i> Subject</label>
+            <select id="subjectFilter" class="custom-select">
+              <option value="all">All Subjects</option>
+              <!-- Dynamic subject options populated via JS -->
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label for="sortBySelect"><i class="fa-solid fa-arrow-down-wide-short"></i> Sort By</label>
+            <select id="sortBySelect" class="custom-select">
+              <option value="dueDateAsc">Due Date (Earliest First)</option>
+              <option value="dueDateDesc">Due Date (Latest First)</option>
+              <option value="priorityDesc">Priority (Highest First)</option>
+              <option value="titleAsc">Title (A - Z)</option>
+              <option value="createdDesc">Recently Added</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- Active Filters Bar (shown when filters applied) -->
+      <div class="active-filters-bar" id="activeFiltersBar" style="display: none;">
+        <span class="active-filters-label">Active filters:</span>
+        <div class="tags-container" id="activeFilterTags"></div>
+        <button class="btn-text-only" id="resetFiltersBtn">Clear All</button>
+      </div>
+
+      <!-- Task List Container -->
+      <section class="tasks-section">
+        <div class="tasks-header">
+          <div class="tasks-count-info">
+            Showing <strong id="visibleTaskCount">0</strong> task(s)
+          </div>
+          <div class="view-mode-toggle">
+            <button class="view-btn active" id="viewModeGridBtn" title="Grid View">
+              <i class="fa-solid fa-border-all"></i>
+            </button>
+            <button class="view-btn" id="viewModeListBtn" title="Compact List View">
+              <i class="fa-solid fa-list"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Task Items Container -->
+        <div class="task-grid" id="taskListContainer">
+          <!-- Rendered dynamically -->
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state" id="emptyState" style="display: none;">
+          <div class="empty-icon">
+            <i class="fa-solid fa-folder-open"></i>
+          </div>
+          <h3 id="emptyStateTitle">No tasks found</h3>
+          <p id="emptyStateDesc">Try adjusting your search query or filters, or add a new task to get started.</p>
+          <button class="btn btn-primary btn-sm" id="emptyStateAddBtn">
+            <i class="fa-solid fa-plus"></i> Create New Task
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <!-- Floating Action Button for Mobile -->
+    <button class="fab-btn" id="fabAddTaskBtn" aria-label="Add new task">
+      <i class="fa-solid fa-plus"></i>
+    </button>
+  </div>
+
+  <!-- Task Modal (Add & Edit Task) -->
+  <div class="modal-backdrop" id="taskModalBackdrop">
+    <div class="modal-card" id="taskModal">
+      <div class="modal-header">
+        <h3 id="modalTitle"><i class="fa-solid fa-plus-circle"></i> Create New Task</h3>
+        <button class="modal-close-btn" id="closeModalBtn" aria-label="Close modal">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="taskForm" novalidate>
+        <input type="hidden" id="taskIdInput">
+
+        <div class="form-group">
+          <label for="taskTitleInput">Task Title <span class="required">*</span></label>
+          <input type="text" id="taskTitleInput" placeholder="e.g. Final Calculus Assignment Chapter 5" required maxlength="120">
+          <span class="field-error" id="titleError">Task title is required</span>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="taskSubjectInput">Subject / Course</label>
+            <input type="text" id="taskSubjectInput" placeholder="e.g. MATH201, CS101, Physics" list="subjectSuggestions">
+            <datalist id="subjectSuggestions">
+              <option value="Computer Science">
+              <option value="Mathematics">
+              <option value="Physics">
+              <option value="Chemistry">
+              <option value="Biology">
+              <option value="English Literature">
+              <option value="History">
+              <option value="Economics">
+            </datalist>
+          </div>
+
+          <div class="form-group">
+            <label for="taskPriorityInput">Priority Level <span class="required">*</span></label>
+            <select id="taskPriorityInput" required>
+              <option value="low">🟢 Low Priority</option>
+              <option value="medium" selected>🟡 Medium Priority</option>
+              <option value="high">🟠 High Priority</option>
+              <option value="urgent">🔴 Urgent Priority</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="taskDueDateInput">Due Date & Time <span class="required">*</span></label>
+          <input type="datetime-local" id="taskDueDateInput" required>
+          <span class="field-error" id="dateError">Valid due date is required</span>
+        </div>
+
+        <div class="form-group">
+          <label for="taskDescInput">Description / Notes</label>
+          <textarea id="taskDescInput" rows="3" placeholder="Add study notes, links, rubric details or location..."></textarea>
+        </div>
+
+        <!-- Subtask Checklist Section -->
+        <div class="form-group">
+          <label>Subtasks / Checklist</label>
+          <div class="subtask-input-row">
+            <input type="text" id="newSubtaskInput" placeholder="Add a subtask step (e.g., Draft outline)...">
+            <button type="button" class="btn btn-secondary btn-sm" id="addSubtaskBtn">
+              <i class="fa-solid fa-plus"></i> Add
+            </button>
+          </div>
+          <ul class="modal-subtask-list" id="modalSubtaskList">
+            <!-- Subtasks rendered dynamically -->
+          </ul>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="cancelModalBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="saveTaskBtn">
+            <i class="fa-solid fa-check"></i> Save Task
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Application Script -->
+  <script src="app.js"></script>
+</body>
+</html>
