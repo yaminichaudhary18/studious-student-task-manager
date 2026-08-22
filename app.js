@@ -9,6 +9,7 @@
   // --- Constants & Keys ---
   const STORAGE_KEY = 'studious_tasks_v1';
   const THEME_KEY = 'studious_theme_v1';
+  const SUBJECT_COLORS_KEY = 'studious_subject_colors_v1';
 
   // Priority numerical values for sorting
   const PRIORITY_ORDER = {
@@ -18,12 +19,36 @@
     low: 1
   };
 
+  // Task Types & Icons
+  const TASK_TYPE_ICONS = {
+    Assignment: '📝',
+    Exam: '🎯',
+    Quiz: '⚡',
+    Lab: '🧪',
+    Project: '🚀',
+    Reading: '📖',
+    Other: '📌'
+  };
+
+  // Accessible Subject Palette
+  const PALETTE = [
+    { bg: 'rgba(99, 102, 241, 0.15)', text: '#6366f1', border: 'rgba(99, 102, 241, 0.3)' }, // Indigo
+    { bg: 'rgba(16, 185, 129, 0.15)', text: '#10b981', border: 'rgba(16, 185, 129, 0.3)' }, // Emerald
+    { bg: 'rgba(245, 158, 11, 0.15)', text: '#f59e0b', border: 'rgba(245, 158, 11, 0.3)' }, // Amber
+    { bg: 'rgba(236, 72, 153, 0.15)', text: '#ec4899', border: 'rgba(236, 72, 153, 0.3)' }, // Pink
+    { bg: 'rgba(139, 92, 246, 0.15)', text: '#8b5cf6', border: 'rgba(139, 92, 246, 0.3)' }, // Purple
+    { bg: 'rgba(6, 182, 212, 0.15)', text: '#06b6d4', border: 'rgba(6, 182, 212, 0.3)' }, // Cyan
+    { bg: 'rgba(249, 115, 22, 0.15)', text: '#f97316', border: 'rgba(249, 115, 22, 0.3)' }, // Orange
+    { bg: 'rgba(20, 184, 166, 0.15)', text: '#14b8a6', border: 'rgba(20, 184, 166, 0.3)' }  // Teal
+  ];
+
   // --- Initial Demo Tasks ---
   const DEFAULT_DEMO_TASKS = [
     {
       id: 'demo-task-1',
       title: 'CS101: Submit Binary Search Tree Lab Assignment',
       subject: 'Computer Science',
+      type: 'Lab',
       priority: 'urgent',
       dueDate: getRelativeDateOffset(1, 14, 0), // Tomorrow 2:00 PM
       description: 'Implement insertion, deletion, and in-order traversal methods. Write unit test cases and submit ZIP on portal.',
@@ -39,6 +64,7 @@
       id: 'demo-task-2',
       title: 'MATH202: Multivariable Calculus Midterm Revision',
       subject: 'Mathematics',
+      type: 'Exam',
       priority: 'high',
       dueDate: getRelativeDateOffset(3, 10, 30), // 3 days from now
       description: 'Review double integrals, partial derivatives, and Green\'s Theorem. Solve practice sets 4 to 7.',
@@ -53,6 +79,7 @@
       id: 'demo-task-3',
       title: 'ENG110: Peer Review Literary Criticism Essay',
       subject: 'English',
+      type: 'Assignment',
       priority: 'medium',
       dueDate: getRelativeDateOffset(5, 18, 0),
       description: 'Read and provide constructive feedback on two peer drafts for the 20th century poetry essay.',
@@ -67,6 +94,7 @@
       id: 'demo-task-4',
       title: 'PHYS105: Optics & Wave Interference Experiment Report',
       subject: 'Physics',
+      type: 'Lab',
       priority: 'low',
       dueDate: getRelativeDateOffset(-1, 12, 0), // Yesterday
       description: 'Plot fringe separation vs distance graphs and submit final PDF report.',
@@ -84,17 +112,17 @@
     const d = new Date();
     d.setDate(d.getDate() + daysOffset);
     d.setHours(hours, minutes, 0, 0);
-    
-    // Format YYYY-MM-THH:mm for datetime-local input compatibility
     const pad = (n) => String(n).padStart(2, '0');
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(hours)}:${pad(minutes)}`;
   }
 
   // --- App State ---
   let tasks = [];
+  let subjectColorsMap = {};
   let activeView = 'all'; // 'all' | 'today' | 'upcoming' | 'overdue' | 'completed'
   let searchQuery = '';
   let priorityFilter = 'all';
+  let typeFilter = 'all';
   let subjectFilter = 'all';
   let sortBy = 'dueDateAsc';
   let viewMode = 'grid'; // 'grid' | 'list'
@@ -110,7 +138,10 @@
     closeSidebarBtn: document.getElementById('closeSidebarBtn'),
     navButtons: document.querySelectorAll('.nav-btn'),
     resetDemoBtn: document.getElementById('resetDemoBtn'),
-    
+    exportDataBtn: document.getElementById('exportDataBtn'),
+    importDataTriggerBtn: document.getElementById('importDataTriggerBtn'),
+    importFileInput: document.getElementById('importFileInput'),
+
     // Header & View titles
     viewTitle: document.getElementById('viewTitle'),
     viewSubtitle: document.getElementById('viewSubtitle'),
@@ -136,6 +167,7 @@
     searchInput: document.getElementById('searchInput'),
     clearSearchBtn: document.getElementById('clearSearchBtn'),
     priorityFilter: document.getElementById('priorityFilter'),
+    typeFilter: document.getElementById('typeFilter'),
     subjectFilter: document.getElementById('subjectFilter'),
     sortBySelect: document.getElementById('sortBySelect'),
     activeFiltersBar: document.getElementById('activeFiltersBar'),
@@ -162,8 +194,10 @@
     taskIdInput: document.getElementById('taskIdInput'),
     taskTitleInput: document.getElementById('taskTitleInput'),
     taskSubjectInput: document.getElementById('taskSubjectInput'),
+    taskTypeInput: document.getElementById('taskTypeInput'),
     taskPriorityInput: document.getElementById('taskPriorityInput'),
     taskDueDateInput: document.getElementById('taskDueDateInput'),
+    presetChips: document.querySelectorAll('.preset-chip'),
     taskDescInput: document.getElementById('taskDescInput'),
     newSubtaskInput: document.getElementById('newSubtaskInput'),
     addSubtaskBtn: document.getElementById('addSubtaskBtn'),
@@ -178,6 +212,7 @@
   // --- Initialization ---
   function init() {
     initTheme();
+    loadSubjectColors();
     loadTasks();
     setupEventListeners();
     renderApp();
@@ -197,19 +232,74 @@
     showToast(`Switched to ${newTheme} mode`, 'info');
   }
 
-  // --- Storage Operations ---
+  // --- Subject Color Management ---
+  function loadSubjectColors() {
+    const data = localStorage.getItem(SUBJECT_COLORS_KEY);
+    if (data) {
+      try {
+        subjectColorsMap = JSON.parse(data);
+      } catch (e) {
+        subjectColorsMap = {};
+      }
+    }
+  }
+
+  function saveSubjectColors() {
+    localStorage.setItem(SUBJECT_COLORS_KEY, JSON.stringify(subjectColorsMap));
+  }
+
+  function getSubjectStyle(subjectStr) {
+    if (!subjectStr) return PALETTE[0];
+    const key = subjectStr.trim().toLowerCase();
+
+    if (!subjectColorsMap[key]) {
+      // Deterministic hash to pick palette index
+      let hash = 0;
+      for (let i = 0; i < key.length; i++) {
+        hash = key.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      const index = Math.abs(hash) % PALETTE.length;
+      subjectColorsMap[key] = index;
+      saveSubjectColors();
+    }
+
+    const paletteIndex = subjectColorsMap[key] % PALETTE.length;
+    return PALETTE[paletteIndex];
+  }
+
+  // --- Data Migration & Storage Operations ---
+  function migrateTaskData(t) {
+    return {
+      id: t.id || 'task-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+      title: t.title || 'Untitled Task',
+      subject: t.subject || '',
+      type: t.type || 'Other',
+      priority: t.priority || 'medium',
+      dueDate: t.dueDate || '',
+      description: t.description || '',
+      subtasks: Array.isArray(t.subtasks) ? t.subtasks.map(st => ({
+        id: st.id || 'st-' + Math.random().toString(36).substr(2, 6),
+        text: st.text || '',
+        completed: !!st.completed
+      })) : [],
+      completed: !!t.completed,
+      createdAt: t.createdAt || new Date().toISOString()
+    };
+  }
+
   function loadTasks() {
     const data = localStorage.getItem(STORAGE_KEY);
     if (data) {
       try {
-        tasks = JSON.parse(data);
+        const raw = JSON.parse(data);
+        tasks = Array.isArray(raw) ? raw.map(migrateTaskData) : DEFAULT_DEMO_TASKS.map(migrateTaskData);
       } catch (e) {
         console.error('Failed to parse tasks from localStorage', e);
-        tasks = [...DEFAULT_DEMO_TASKS];
+        tasks = DEFAULT_DEMO_TASKS.map(migrateTaskData);
         saveTasks();
       }
     } else {
-      tasks = [...DEFAULT_DEMO_TASKS];
+      tasks = DEFAULT_DEMO_TASKS.map(migrateTaskData);
       saveTasks();
     }
   }
@@ -219,57 +309,122 @@
   }
 
   function resetDemoData() {
-    tasks = JSON.parse(JSON.stringify(DEFAULT_DEMO_TASKS));
+    tasks = DEFAULT_DEMO_TASKS.map(migrateTaskData);
     saveTasks();
     renderApp();
     showToast('Demo data restored successfully!', 'success');
   }
 
-  // --- Date Logic & Helpers ---
-  function isOverdue(dueDateStr, isCompleted) {
-    if (isCompleted || !dueDateStr) return false;
-    const due = new Date(dueDateStr);
-    const now = new Date();
-    return due < now;
+  // --- Backup Export & Import ---
+  function exportData() {
+    const data = {
+      version: '1.0',
+      appName: 'Studious',
+      exportDate: new Date().toISOString(),
+      tasks: tasks,
+      subjectColors: subjectColorsMap,
+      theme: localStorage.getItem(THEME_KEY) || 'dark'
+    };
+
+    const jsonStr = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+
+    const dateStr = new Date().toISOString().split('T')[0];
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `studious-backup-${dateStr}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('Data backup exported successfully!', 'success');
   }
 
+  function importDataFile(file) {
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      try {
+        const imported = JSON.parse(e.target.result);
+
+        if (!imported || typeof imported !== 'object') {
+          throw new Error('Invalid JSON structure');
+        }
+
+        const importedTasks = imported.tasks || (Array.isArray(imported) ? imported : null);
+        if (!Array.isArray(importedTasks)) {
+          throw new Error('No task array found in JSON file');
+        }
+
+        if (!confirm(`Import ${importedTasks.length} task(s)? This will replace your current tasks.`)) {
+          elements.importFileInput.value = '';
+          return;
+        }
+
+        tasks = importedTasks.map(migrateTaskData);
+        if (imported.subjectColors && typeof imported.subjectColors === 'object') {
+          subjectColorsMap = imported.subjectColors;
+          saveSubjectColors();
+        }
+
+        if (imported.theme && (imported.theme === 'light' || imported.theme === 'dark')) {
+          localStorage.setItem(THEME_KEY, imported.theme);
+          document.documentElement.setAttribute('data-theme', imported.theme);
+        }
+
+        saveTasks();
+        renderApp();
+        showToast(`Successfully imported ${tasks.length} task(s)!`, 'success');
+      } catch (err) {
+        console.error('Import Error:', err);
+        showToast('Failed to import: Invalid or corrupted JSON file', 'danger');
+      } finally {
+        elements.importFileInput.value = '';
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  // --- Date Helpers (Fixed for Calendar & Local Timezone) ---
   function isDueToday(dueDateStr) {
     if (!dueDateStr) return false;
     const due = new Date(dueDateStr);
-    const today = new Date();
+    if (isNaN(due.getTime())) return false;
+    const now = new Date();
     return (
-      due.getDate() === today.getDate() &&
-      due.getMonth() === today.getMonth() &&
-      due.getFullYear() === today.getFullYear()
+      due.getFullYear() === now.getFullYear() &&
+      due.getMonth() === now.getMonth() &&
+      due.getDate() === now.getDate()
     );
+  }
+
+  function isOverdue(dueDateStr, isCompleted) {
+    if (isCompleted || !dueDateStr) return false;
+    const due = new Date(dueDateStr);
+    if (isNaN(due.getTime())) return false;
+    const now = new Date();
+    return due < now;
   }
 
   function formatRelativeDueDate(dueDateStr) {
     if (!dueDateStr) return 'No due date';
     const due = new Date(dueDateStr);
+    if (isNaN(due.getTime())) return 'Invalid date';
+
     const now = new Date();
-    
-    // Time component string e.g. 2:30 PM
     const timeStr = due.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    
-    const diffMs = due - now;
-    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
-    if (isDueToday(dueDateStr)) {
-      return `Today at ${timeStr}`;
-    }
+    // Calendar day difference normalized to midnight
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfDue = new Date(due.getFullYear(), due.getMonth(), due.getDate());
 
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    if (due.getDate() === yesterday.getDate() && due.getMonth() === yesterday.getMonth() && due.getFullYear() === yesterday.getFullYear()) {
-      return `Yesterday at ${timeStr}`;
-    }
+    const diffDays = Math.round((startOfDue - startOfToday) / (1000 * 60 * 60 * 24));
 
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    if (due.getDate() === tomorrow.getDate() && due.getMonth() === tomorrow.getMonth() && due.getFullYear() === tomorrow.getFullYear()) {
-      return `Tomorrow at ${timeStr}`;
-    }
+    if (diffDays === 0) return `Today at ${timeStr}`;
+    if (diffDays === 1) return `Tomorrow at ${timeStr}`;
+    if (diffDays === -1) return `Yesterday at ${timeStr}`;
 
     if (diffDays > 1 && diffDays <= 7) {
       const dayName = due.toLocaleDateString([], { weekday: 'short' });
@@ -277,6 +432,30 @@
     }
 
     return due.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ` at ${timeStr}`;
+  }
+
+  function applyDatePreset(presetType) {
+    const d = new Date();
+
+    if (presetType === 'today') {
+      d.setHours(17, 0, 0, 0);
+    } else if (presetType === 'tomorrow') {
+      d.setDate(d.getDate() + 1);
+      d.setHours(17, 0, 0, 0);
+    } else if (presetType === 'next-monday') {
+      const day = d.getDay();
+      const daysUntilMonday = ((8 - day) % 7) || 7;
+      d.setDate(d.getDate() + daysUntilMonday);
+      d.setHours(9, 0, 0, 0);
+    } else if (presetType === 'next-week') {
+      d.setDate(d.getDate() + 7);
+      d.setHours(9, 0, 0, 0);
+    }
+
+    const pad = (n) => String(n).padStart(2, '0');
+    const formatted = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    elements.taskDueDateInput.value = formatted;
+    elements.dateError.parentElement.classList.remove('error');
   }
 
   // --- Filtering & Sorting Core ---
@@ -296,6 +475,9 @@
       // Priority Filter
       if (priorityFilter !== 'all' && task.priority !== priorityFilter) return false;
 
+      // Task Type Filter
+      if (typeFilter !== 'all' && (task.type || 'Other') !== typeFilter) return false;
+
       // Subject Filter
       if (subjectFilter !== 'all' && task.subject !== subjectFilter) return false;
 
@@ -304,9 +486,10 @@
         const q = searchQuery.toLowerCase();
         const matchesTitle = task.title.toLowerCase().includes(q);
         const matchesSubject = (task.subject || '').toLowerCase().includes(q);
+        const matchesType = (task.type || '').toLowerCase().includes(q);
         const matchesDesc = (task.description || '').toLowerCase().includes(q);
         const matchesSubtasks = (task.subtasks || []).some(st => (st.text || '').toLowerCase().includes(q));
-        if (!matchesTitle && !matchesSubject && !matchesDesc && !matchesSubtasks) return false;
+        if (!matchesTitle && !matchesSubject && !matchesType && !matchesDesc && !matchesSubtasks) return false;
       }
 
       return true;
@@ -372,7 +555,7 @@
     // Update Progress Ring
     const percentage = total === 0 ? 0 : Math.round((completed / total) * 100);
     elements.progressPercentage.textContent = `${percentage}%`;
-    
+
     // SVG circle circumference for r=40 is ~251.2
     const circumference = 251.2;
     const offset = circumference - (percentage / 100) * circumference;
@@ -381,8 +564,7 @@
 
   function renderSubjectFilterOptions() {
     const subjects = Array.from(new Set(tasks.map(t => t.subject).filter(Boolean)));
-    
-    // Reset subjectFilter state if current selected subject no longer exists
+
     if (subjectFilter !== 'all' && !subjects.includes(subjectFilter)) {
       subjectFilter = 'all';
     }
@@ -406,6 +588,9 @@
     }
     if (priorityFilter !== 'all') {
       activeTags.push({ type: 'priority', label: `Priority: ${priorityFilter.toUpperCase()}` });
+    }
+    if (typeFilter !== 'all') {
+      activeTags.push({ type: 'type', label: `Type: ${typeFilter}` });
     }
     if (subjectFilter !== 'all') {
       activeTags.push({ type: 'subject', label: `Subject: ${subjectFilter}` });
@@ -452,6 +637,11 @@
     const totalSubtasks = task.subtasks ? task.subtasks.length : 0;
     const completedSubtasks = task.subtasks ? task.subtasks.filter(s => s.completed).length : 0;
 
+    // Subject Accent Color
+    const subjStyle = getSubjectStyle(task.subject);
+    const taskType = task.type || 'Other';
+    const typeIcon = TASK_TYPE_ICONS[taskType] || '📌';
+
     return `
       <div class="task-card ${task.completed ? 'completed' : ''}" data-id="${task.id}">
         <div class="task-card-header">
@@ -461,10 +651,18 @@
           <div class="task-title-area">
             <h4 class="task-title">${escapeHtml(task.title)}</h4>
             <div class="task-meta-row">
+              <span class="type-badge">
+                ${typeIcon} ${escapeHtml(taskType)}
+              </span>
               <span class="priority-badge priority-${task.priority}">
                 ${getPriorityIcon(task.priority)} ${task.priority}
               </span>
-              ${task.subject ? `<span class="subject-tag"><i class="fa-solid fa-book-bookmark"></i> ${escapeHtml(task.subject)}</span>` : ''}
+              ${task.subject ? `
+                <span class="subject-tag" style="--subject-bg: ${subjStyle.bg}; --subject-color: ${subjStyle.text}; --subject-border: ${subjStyle.border};">
+                  <span class="subject-color-dot"></span>
+                  ${escapeHtml(task.subject)}
+                </span>
+              ` : ''}
             </div>
           </div>
         </div>
@@ -519,7 +717,7 @@
   }
 
   function updateEmptyStateText() {
-    if (searchQuery || priorityFilter !== 'all' || subjectFilter !== 'all') {
+    if (searchQuery || priorityFilter !== 'all' || typeFilter !== 'all' || subjectFilter !== 'all') {
       elements.emptyStateTitle.textContent = 'No matching tasks found';
       elements.emptyStateDesc.textContent = 'Try adjusting your search query or filter criteria to see more tasks.';
     } else {
@@ -541,8 +739,8 @@
           elements.emptyStateDesc.textContent = 'Finish a task to see it in your completed archive.';
           break;
         default:
-          elements.emptyStateTitle.textContent = 'Your task list is empty';
-          elements.emptyStateDesc.textContent = 'Add your first task to start organizing your study schedule!';
+          elements.emptyStateTitle.textContent = 'Welcome to Studious! 👋';
+          elements.emptyStateDesc.textContent = 'Your task hub is empty. Add your coursework assignments, exams, and study checklists to stay organized!';
       }
     }
   }
@@ -551,7 +749,7 @@
   function toggleTaskCompletion(taskId) {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
-    
+
     task.completed = !task.completed;
     saveTasks();
     renderApp();
@@ -584,7 +782,6 @@
 
   // --- Modal Logic ---
   function openModal(editingTask = null) {
-    // Reset validation errors
     elements.taskForm.classList.remove('was-validated');
     elements.titleError.parentElement.classList.remove('error');
     elements.dateError.parentElement.classList.remove('error');
@@ -594,6 +791,7 @@
       elements.taskIdInput.value = editingTask.id;
       elements.taskTitleInput.value = editingTask.title;
       elements.taskSubjectInput.value = editingTask.subject || '';
+      elements.taskTypeInput.value = editingTask.type || 'Other';
       elements.taskPriorityInput.value = editingTask.priority;
       elements.taskDueDateInput.value = editingTask.dueDate;
       elements.taskDescInput.value = editingTask.description || '';
@@ -602,10 +800,10 @@
       elements.modalTitle.innerHTML = '<i class="fa-solid fa-plus-circle"></i> Create New Task';
       elements.taskForm.reset();
       elements.taskIdInput.value = '';
-      
-      // Default due date: tomorrow at 5:00 PM
+
       elements.taskDueDateInput.value = getRelativeDateOffset(1, 17, 0);
       elements.taskPriorityInput.value = 'medium';
+      elements.taskTypeInput.value = 'Assignment';
       currentModalSubtasks = [];
     }
 
@@ -673,6 +871,7 @@
     const taskData = {
       title: title,
       subject: elements.taskSubjectInput.value.trim(),
+      type: elements.taskTypeInput.value,
       priority: elements.taskPriorityInput.value,
       dueDate: dueDate,
       description: elements.taskDescInput.value.trim(),
@@ -707,13 +906,13 @@
   function showToast(message, type = 'info') {
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
-    
+
     let icon = 'fa-circle-info';
     if (type === 'success') icon = 'fa-circle-check';
     if (type === 'danger') icon = 'fa-circle-exclamation';
 
     toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${escapeHtml(message)}</span>`;
-    
+
     elements.toastContainer.appendChild(toast);
 
     setTimeout(() => {
@@ -752,6 +951,17 @@
     elements.closeSidebarBtn.addEventListener('click', closeSidebar);
     elements.sidebarOverlay.addEventListener('click', closeSidebar);
 
+    // Backup Export & Import Triggers
+    elements.exportDataBtn.addEventListener('click', exportData);
+    elements.importDataTriggerBtn.addEventListener('click', () => {
+      elements.importFileInput.click();
+    });
+    elements.importFileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        importDataFile(e.target.files[0]);
+      }
+    });
+
     // Navigation Views
     elements.navButtons.forEach(btn => {
       btn.addEventListener('click', () => {
@@ -759,7 +969,6 @@
         btn.classList.add('active');
         activeView = btn.dataset.filterView;
 
-        // Update Title & Subtitle
         const viewNames = {
           all: ['All Tasks', 'Manage your coursework, assignments, and study schedules'],
           today: ['Due Today', 'Tasks requiring your focus today'],
@@ -783,7 +992,7 @@
     elements.emptyStateAddBtn.addEventListener('click', () => openModal());
     elements.closeModalBtn.addEventListener('click', closeModal);
     elements.cancelModalBtn.addEventListener('click', closeModal);
-    
+
     elements.taskModalBackdrop.addEventListener('click', (e) => {
       if (e.target === elements.taskModalBackdrop) closeModal();
     });
@@ -792,6 +1001,14 @@
       if (e.key === 'Escape' && elements.taskModalBackdrop.classList.contains('active')) {
         closeModal();
       }
+    });
+
+    // Quick Date Presets Chips
+    elements.presetChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        const preset = chip.dataset.preset;
+        applyDatePreset(preset);
+      });
     });
 
     // Real-time Input Error Clearing
@@ -816,7 +1033,7 @@
       }
     });
 
-    // Subtask Modal Item Actions (Delete & Toggle Completed)
+    // Subtask Modal Item Actions
     elements.modalSubtaskList.addEventListener('click', (e) => {
       const deleteBtn = e.target.closest('[data-remove-subtask]');
       if (deleteBtn) {
@@ -840,7 +1057,7 @@
     // Task Form Submit
     elements.taskForm.addEventListener('submit', handleTaskFormSubmit);
 
-    // Controls: Search, Priority & Subject Filters, Sort
+    // Controls: Search, Priority, Type & Subject Filters, Sort
     elements.searchInput.addEventListener('input', (e) => {
       searchQuery = e.target.value;
       elements.clearSearchBtn.style.display = searchQuery ? 'block' : 'none';
@@ -859,6 +1076,11 @@
       renderApp();
     });
 
+    elements.typeFilter.addEventListener('change', (e) => {
+      typeFilter = e.target.value;
+      renderApp();
+    });
+
     elements.subjectFilter.addEventListener('change', (e) => {
       subjectFilter = e.target.value;
       renderApp();
@@ -873,9 +1095,11 @@
     elements.resetFiltersBtn.addEventListener('click', () => {
       searchQuery = '';
       priorityFilter = 'all';
+      typeFilter = 'all';
       subjectFilter = 'all';
       elements.searchInput.value = '';
       elements.priorityFilter.value = 'all';
+      elements.typeFilter.value = 'all';
       elements.subjectFilter.value = 'all';
       renderApp();
     });
@@ -892,6 +1116,10 @@
         if (type === 'priority') {
           priorityFilter = 'all';
           elements.priorityFilter.value = 'all';
+        }
+        if (type === 'type') {
+          typeFilter = 'all';
+          elements.typeFilter.value = 'all';
         }
         if (type === 'subject') {
           subjectFilter = 'all';
@@ -916,7 +1144,7 @@
       renderTaskList();
     });
 
-    // Task Card Delegation (Check, Subtask Check, Edit, Delete, Accordion Toggle)
+    // Task Card Delegation
     elements.taskListContainer.addEventListener('click', (e) => {
       const card = e.target.closest('.task-card');
       if (!card) return;

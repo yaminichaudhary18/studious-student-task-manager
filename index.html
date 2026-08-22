@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Studious | Responsive Student Task & Study Manager</title>
   <meta name="description" content="A powerful, modern student task management web application with priority levels, categories, search, filtering, and subtasks.">
-  
+
   <!-- Favicon -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎓</text></svg>">
 
@@ -13,10 +13,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  
+
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
+
   <!-- Custom CSS -->
   <link rel="stylesheet" href="style.css">
 </head>
@@ -108,7 +108,19 @@
 
       <!-- Preferences & Actions -->
       <div class="sidebar-footer">
-        <button class="btn btn-secondary btn-full" id="resetDemoBtn">
+        <div class="backup-section">
+          <div class="nav-section-title"><i class="fa-solid fa-database"></i> Backup & Data</div>
+          <div class="backup-actions">
+            <button class="btn btn-secondary btn-sm btn-full" id="exportDataBtn" title="Export all tasks & settings to JSON">
+              <i class="fa-solid fa-download"></i> Export JSON
+            </button>
+            <button class="btn btn-secondary btn-sm btn-full" id="importDataTriggerBtn" title="Import tasks from JSON file">
+              <i class="fa-solid fa-upload"></i> Import JSON
+            </button>
+            <input type="file" id="importFileInput" accept=".json" style="display: none;">
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-full btn-sm" id="resetDemoBtn">
           <i class="fa-solid fa-rotate-left"></i> Reset Demo Data
         </button>
       </div>
@@ -148,7 +160,7 @@
         <!-- Search Field -->
         <div class="search-box">
           <i class="fa-solid fa-magnifying-glass search-icon"></i>
-          <input type="text" id="searchInput" placeholder="Search tasks by title, subject, or notes..." autocomplete="off">
+          <input type="text" id="searchInput" placeholder="Search tasks by title, subject, notes, or type..." autocomplete="off">
           <button class="clear-search-btn" id="clearSearchBtn" aria-label="Clear search">
             <i class="fa-solid fa-xmark"></i>
           </button>
@@ -164,6 +176,20 @@
               <option value="high">🟠 High</option>
               <option value="medium">🟡 Medium</option>
               <option value="low">🟢 Low</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label for="typeFilter"><i class="fa-solid fa-tags"></i> Task Type</label>
+            <select id="typeFilter" class="custom-select">
+              <option value="all">All Types</option>
+              <option value="Assignment">📝 Assignment</option>
+              <option value="Exam">🎯 Exam</option>
+              <option value="Quiz">⚡ Quiz</option>
+              <option value="Lab">🧪 Lab</option>
+              <option value="Project">🚀 Project</option>
+              <option value="Reading">📖 Reading</option>
+              <option value="Other">📌 Other</option>
             </select>
           </div>
 
@@ -272,6 +298,19 @@
           </div>
 
           <div class="form-group">
+            <label for="taskTypeInput">Task Type</label>
+            <select id="taskTypeInput">
+              <option value="Assignment">📝 Assignment</option>
+              <option value="Exam">🎯 Exam</option>
+              <option value="Quiz">⚡ Quiz</option>
+              <option value="Lab">🧪 Lab</option>
+              <option value="Project">🚀 Project</option>
+              <option value="Reading">📖 Reading</option>
+              <option value="Other" selected>📌 Other</option>
+            </select>
+          </div>
+
+          <div class="form-group">
             <label for="taskPriorityInput">Priority Level <span class="required">*</span></label>
             <select id="taskPriorityInput" required>
               <option value="low">🟢 Low Priority</option>
@@ -285,6 +324,15 @@
         <div class="form-group">
           <label for="taskDueDateInput">Due Date & Time <span class="required">*</span></label>
           <input type="datetime-local" id="taskDueDateInput" required>
+          <div class="date-presets-container">
+            <span class="presets-label">Presets:</span>
+            <div class="preset-chips">
+              <button type="button" class="preset-chip" data-preset="today">Today 5PM</button>
+              <button type="button" class="preset-chip" data-preset="tomorrow">Tomorrow 5PM</button>
+              <button type="button" class="preset-chip" data-preset="next-monday">Mon 9AM</button>
+              <button type="button" class="preset-chip" data-preset="next-week">1 Wk 9AM</button>
+            </div>
+          </div>
           <span class="field-error" id="dateError">Valid due date is required</span>
         </div>
 

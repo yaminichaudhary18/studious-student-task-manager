@@ -33,7 +33,7 @@
   --radius-md: 12px;
   --radius-lg: 18px;
   --radius-full: 9999px;
-  
+
   --transition-fast: 0.18s ease;
   --transition-normal: 0.28s cubic-bezier(0.4, 0, 0.2, 1);
   --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
@@ -50,7 +50,7 @@
   --bg-input: #0f172a;
   --border-color: rgba(255, 255, 255, 0.08);
   --border-focus: #6366f1;
-  
+
   --text-main: #f8fafc;
   --text-muted: #94a3b8;
   --text-inverse: #0f172a;
@@ -59,10 +59,10 @@
   --accent-primary-hover: #4f46e5;
   --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
   --accent-gradient-hover: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-  
+
   --badge-bg: rgba(255, 255, 255, 0.08);
   --badge-text: #cbd5e1;
-  
+
   --modal-overlay: rgba(3, 7, 18, 0.75);
 }
 
@@ -75,7 +75,7 @@
   --bg-input: #f8fafc;
   --border-color: #e2e8f0;
   --border-focus: #4f46e5;
-  
+
   --text-main: #0f172a;
   --text-muted: #64748b;
   --text-inverse: #ffffff;
@@ -84,10 +84,10 @@
   --accent-primary-hover: #4338ca;
   --accent-gradient: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
   --accent-gradient-hover: linear-gradient(135deg, #4338ca 0%, #4f46e5 100%);
-  
+
   --badge-bg: #e2e8f0;
   --badge-text: #334155;
-  
+
   --modal-overlay: rgba(15, 23, 42, 0.5);
 }
 
@@ -363,6 +363,21 @@ input:focus, select:focus, textarea:focus {
   margin-top: 20px;
   padding-top: 16px;
   border-top: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.backup-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.backup-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
 }
 
 /* --------------------------------------------------------------------------
@@ -528,8 +543,14 @@ input:focus, select:focus, textarea:focus {
 
 .filters-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 16px;
+}
+
+@media (max-width: 1100px) {
+  .filters-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .filter-group {
@@ -551,6 +572,45 @@ input:focus, select:focus, textarea:focus {
 .custom-select {
   cursor: pointer;
   height: 40px;
+}
+
+/* Date Presets Container inside Modal */
+.date-presets-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.presets-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.preset-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.preset-chip {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  background: var(--bg-input);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+  transition: all var(--transition-fast);
+}
+
+.preset-chip:hover {
+  background: var(--accent-primary);
+  color: #ffffff;
+  border-color: var(--accent-primary);
 }
 
 /* Active Filters Tag Bar */
